@@ -1,0 +1,72 @@
+version: '3.8'
+
+networks:
+  redis-net:
+    driver: bridge
+
+services:
+  redis-primary:
+    image: redis:7.2-alpine
+    container_name: redis-primary
+    networks:
+      - redis-net
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly no
+
+  redis-replica-1:
+    image: redis:7.2-alpine
+    container_name: redis-replica-1
+    networks:
+      - redis-net
+    command: redis-server --replicaof redis-primary 6379
+    depends_on:
+      - redis-primary
+
+  redis-replica-2:
+    image: redis:7.2-alpine
+    container_name: redis-replica-2
+    networks:
+      - redis-net
+    command: redis-server --replicaof redis-primary 6379
+    depends_on:
+      - redis-primary
+
+  sentinel1:
+    image: redis:7.2-alpine
+    container_name: sentinel1
+    networks:
+      - redis-net
+    ports:
+      - "26379:26379"
+    volumes:
+      - ./redis/sentinel1.conf:/etc/redis/sentinel.conf
+    command: redis-sentinel /etc/redis/sentinel.conf
+    depends_on:
+      - redis-primary
+
+  sentinel2:
+    image: redis:7.2-alpine
+    container_name: sentinel2
+    networks:
+      - redis-net
+    ports:
+      - "26380:26379"
+    volumes:
+      - ./redis/sentinel2.conf:/etc/redis/sentinel.conf
+    command: redis-sentinel /etc/redis/sentinel.conf
+    depends_on:
+      - redis-primary
+
+  sentinel3:
+    image: redis:7.2-alpine
+    container_name: sentinel3
+    networks:
+      - redis-net
+    ports:
+      - "26381:26379"
+    volumes:
+      - ./redis/sentinel3.conf:/etc/redis/sentinel.conf
+    command: redis-sentinel /etc/redis/sentinel.conf
+    depends_on:
+      - redis-primary
